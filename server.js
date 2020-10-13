@@ -6,7 +6,7 @@ const cors = require('cors');
 
 const express = require('express');
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT ;
 
 app.use(cors());
 
@@ -57,6 +57,13 @@ function Weather(day) {
   this.forecast = day.weather.description;
   this.time = day.temp;
 }
+
+
+
+
+app.get('*', (req, res) => {
+  res.status(404).send('Oops');
+})
 
 
 app.listen(PORT, () => {
