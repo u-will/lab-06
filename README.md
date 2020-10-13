@@ -5,6 +5,6 @@ Estimate of time needed to complete: ___5hrs__
 
 Start time: __4___
 
-Finish time: ___10pm__
+Finish time: ___11pm__
 
-Actual time needed to complete: _____
+Actual time needed to complete: __7hrs___
