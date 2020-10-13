@@ -6,7 +6,7 @@ const cors = require('cors');
 
 const express = require('express');
 const app = express();
-const PORT = process.env.PORT ;
+const PORT = process.env.PORT;
 
 app.use(cors());
 
@@ -34,7 +34,12 @@ function handleLocation(request, response) {
   }
 }
 
-
+// function err(res){
+//   res = {
+//     status = 
+//     send 
+//   }
+// }
 
 app.get('/weather', heandleWeather);
 
@@ -62,7 +67,11 @@ function Weather(day) {
 
 
 app.get('*', (req, res) => {
-  res.status(404).send('Oops');
+  res.status(500).send({
+
+    status: 500,
+    responseText: 'Sorry, something went wrong'
+  });
 })
 
 
