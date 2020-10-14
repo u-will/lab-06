@@ -41,11 +41,7 @@ app.get('/weather', heandleWeather);
 function heandleWeather(req, res) {
   try {
     const jsonData = require('./data/weather.json');
-    const temp = [];
-    jsonData.data.forEach(element => {
-      let weather = new Weather(element);
-      temp.push(weather);
-    });
+    const temp =jsonData.data.map(element => new Weather(element));
     res.json(temp);
   } catch (error) {
     res.status(500).send('Oops you enter the wrong..');
