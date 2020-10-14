@@ -34,14 +34,8 @@ function handleLocation(request, response) {
   }
 }
 
-// function err(res){
-//   res = {
-//     status = 
-//     send 
-//   }
-// }
-
 app.get('/weather', heandleWeather);
+
 
 
 function heandleWeather(req, res) {
@@ -57,10 +51,9 @@ function heandleWeather(req, res) {
     res.status(500).send('Oops you enter the wrong..');
   }
 }
-
 function Weather(day) {
   this.forecast = day.weather.description;
-  this.time = day.temp;
+  this.time = day.datetime;
 }
 
 
