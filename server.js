@@ -9,8 +9,6 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT;
 const locations = {};
-const weathers = {};
-const trails = {};
 const client = new pg.Client(process.env.DATABASE_URL);
 app.use(cors());
 
@@ -42,7 +40,7 @@ function Location(city, geoData) {
 
 function Weather(day) {
   this.forecast = day.weather.description;
-  this.hour = day.valid_date;
+  this.time = day.valid_date;
 }
 
 function Trail(obj) {
