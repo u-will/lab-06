@@ -3,66 +3,114 @@
 require('dotenv').config();
 
 const cors = require('cors');
-
+const superagent = require('superagent');
 const express = require('express');
 const app = express();
 const PORT = process.env.PORT;
 
 app.use(cors());
 
-app.get('/', (req, res) => {
-  res.send('Will\'s house');
-});
 
-
+// creating of Routes
+app.get('/', (req, res) => { res.send('Will\'s house'); });
 app.get('/location', handleLocation);
+app.get('/weather', heandleWeather);
+app.get('/trails', heandleTrail);
+
+// global error
+
+app.get('*', returnErroe);
+
+
+function returnErroe(req, res) {
+  res.status(500).send('Sorry, something went wrong');
+}
+
+
+// constructor
 
 function Location(city, geoData) {
   this.serch_query = city;
-  this.formatted_query = geoData[0].display_name;
-  this.latitude = geoData[0].lat;
-  this.longitude = geoData[0].lon;
+  this.formatted_query = geoData.display_name;
+  this.latitude = geoData.lat;
+  this.longitude = geoData.lon;
 }
+
+function Weather(day) {
+  this.forecast = day.weather.description;
+  this.time = day.valid_date;
+}
+
+function Trail(obj) {
+  let conditionDates = obj.conditionDate.split(' ');
+  this.trail_url = obj.url;
+  this.name = obj.name;
+  this.location = obj.location;
+  this.length = obj.length;
+  this.condition_date = conditionDates[0];
+  this.condition_time = conditionDates[1];
+  this.conditions = obj.conditionStatus;
+  this.stars = obj.stars;
+  this.star_votes = obj.starVotes;
+  this.summary = obj.summary;
+}
+
+// Routes's methods
+
 function handleLocation(request, response) {
   try {
-    const geoData = require('./data/location.json');
+    const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
     const city = request.query.city;
-    const locationData = new Location(city, geoData);
-    response.json(locationData);
+    const url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json&limit=1`;
+    superagent.get(url)
+      .then(data => {
+        const geoData = data.body[0];
+        const locationData = new Location(city, geoData);
+        response.json(locationData);
+      })
+      .catch(err => console.error('retuern', err));
   } catch (error) {
     response.status(500).send('Oops you enter the wromg localhost');
   }
 }
 
-app.get('/weather', heandleWeather);
-
-
 
 function heandleWeather(req, res) {
-  try {
-    const jsonData = require('./data/weather.json');
-    const temp =jsonData.data.map(element => new Weather(element));
-    res.json(temp);
-  } catch (error) {
-    res.status(500).send('Oops you enter the wrong..');
-  }
+
+  const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
+  const lon = req.query.longitude;
+  const lat = req.query.latitude;
+  const url = `https://api.weatherbit.io/v2.0/forecast/daily?lat=${lat}&lon=${lon}&key=${WEATHER_API_KEY}&format=json`;
+  superagent.get(url)
+    .then(data => {
+      let temp = data.body.data.map(element => new Weather(element));
+      res.json(temp);
+    })
+    .catch(err => console.error('retuern', err));
+  // .catch(()=> {
+  //   returnErroe(req, res)
+  // });
 }
-function Weather(day) {
-  this.forecast = day.weather.description;
-  this.time = day.datetime;
+
+function heandleTrail(req, res) {
+  console.log('====================================',req.query);
+  const key = process.env.TRAIL_API_KEY;
+  const lon = req.query.longitude;
+  const lat = req.query.latitude;
+  const url = `https://www.hikingproject.com/data/get-trails?lat=${lat}&lon=${lon}&maxDistance=10&key=${key}`;
+  superagent.get(url)
+    .then(data => {
+      let trail = data.body.trails.map(object => new Trail(object));
+      res.json(trail);
+    })
+    .catch(err => console.error('retuern', err));
+  // .catch(() => {
+  //   returnErroe(req, res);
+  // });
 }
 
 
-
-
-app.get('*', (req, res) => {
-  res.status(500).send({
-
-    status: 500,
-    responseText: 'Sorry, something went wrong'
-  });
-})
-
+// listener of the post
 
 app.listen(PORT, () => {
   console.log(`sever up ${PORT}`);
