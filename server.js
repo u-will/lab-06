@@ -2,12 +2,14 @@
 
 require('dotenv').config();
 
+const pg = require('pg');
 const cors = require('cors');
 const superagent = require('superagent');
 const express = require('express');
 const app = express();
 const PORT = process.env.PORT;
-
+const locations = {};
+const client = new pg.Client(process.env.DATABASE_URL);
 app.use(cors());
 
 
@@ -38,7 +40,7 @@ function Location(city, geoData) {
 
 function Weather(day) {
   this.forecast = day.weather.description;
-  this.time = day.valid_date;
+  this.hour = day.valid_date;
 }
 
 function Trail(obj) {
@@ -58,21 +60,32 @@ function Trail(obj) {
 // Routes's methods
 
 function handleLocation(request, response) {
-  try {
-    const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
-    const city = request.query.city;
-    const url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json&limit=1`;
-    superagent.get(url)
-      .then(data => {
-        const geoData = data.body[0];
-        const locationData = new Location(city, geoData);
-        response.json(locationData);
-      })
-      .catch(err => console.error('retuern', err));
-  } catch (error) {
-    response.status(500).send('Oops you enter the wromg localhost');
-  }
+
+  const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
+  const city = request.query.city;
+  const url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json&limit=1`;
+  let search_query = request.query.city;
+  let SQL = `SELECT * FROM locations WHERE search_query = '${search_query}';`;
+  client.query(SQL)
+    .then(result => {
+      if (result.rows.length > 0) {
+        response.status(200).send(result.rows[0]);
+      }
+      else {
+        superagent.get(url)
+          .then(data => {
+            const geoData = data.body[0];
+            const locationData = new Location(city, geoData);
+            locations[city] = locationData;
+            // console.log(locations);
+            response.json(locationData);
+          })
+          .catch(err => console.error('retuern', err));
+      }
+    })
+    .catch(err => console.error('return', err));
 }
+
 
 
 function heandleWeather(req, res) {
@@ -87,13 +100,9 @@ function heandleWeather(req, res) {
       res.json(temp);
     })
     .catch(err => console.error('retuern', err));
-  // .catch(()=> {
-  //   returnErroe(req, res)
-  // });
 }
 
 function heandleTrail(req, res) {
-  console.log('====================================',req.query);
   const key = process.env.TRAIL_API_KEY;
   const lon = req.query.longitude;
   const lat = req.query.latitude;
@@ -104,9 +113,6 @@ function heandleTrail(req, res) {
       res.json(trail);
     })
     .catch(err => console.error('retuern', err));
-  // .catch(() => {
-  //   returnErroe(req, res);
-  // });
 }
 
 
