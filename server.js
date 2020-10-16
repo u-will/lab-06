@@ -32,7 +32,7 @@ function returnErroe(req, res) {
 // constructor
 
 function Location(city, geoData) {
-  this.serch_query = city;
+  this.search_query = city;
   this.formatted_query = geoData.display_name;
   this.latitude = geoData.lat;
   this.longitude = geoData.lon;
@@ -60,21 +60,31 @@ function Trail(obj) {
 // Routes's methods
 
 function handleLocation(request, response) {
-  try {
-    const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
-    const city = request.query.city;
-    const url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json&limit=1`;
-    superagent.get(url)
-      .then(data => {
-        const geoData = data.body[0];
-        const locationData = new Location(city, geoData);
-        locations[city] = locationData;
-        response.json(locationData);
-      })
-      .catch(err => console.error('retuern', err));
-  } catch (error) {
-    response.status(500).send('Oops you enter the wromg localhost');
-  }
+  const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
+  const city = request.query.city;
+  const url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json&limit=1`;
+  let search_query = [request.query.city];
+  let SQL = `SELECT * FROM locations WHERE search_query=$1;`;
+  client.query(SQL, search_query)
+    .then(result => {
+      console.log(result);
+      if (result.rows.length > 0) {
+        response.status(200).send(result.rows[0]);
+      } else {
+        superagent(url)
+          .then(data => {
+            const geoData = data.body[0];
+            const locationData = new Location(city, geoData);
+            let SQL = 'INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4);';
+            let valSave = [locationData.search_query, locationData.formatted_query, locationData.latitude, locationData.longitude];
+            client.query(SQL, valSave)
+              .then(() =>{
+                response.send(locationData);
+              })
+          })
+          .catch(err => {console.error('return', err)});
+      }
+    })
 }
 
 
@@ -113,7 +123,9 @@ function heandleTrail(req, res) {
 
 
 // listener of the post
-
-app.listen(PORT, () => {
-  console.log(`sever up ${PORT}`);
-});
+client.connect()
+  .then(()=>{
+    app.listen(PORT, () => {
+      console.log(`sever up ${PORT}`);
+    });
+  })
