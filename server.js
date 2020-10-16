@@ -8,7 +8,6 @@ const superagent = require('superagent');
 const express = require('express');
 const app = express();
 const PORT = process.env.PORT;
-const locations = {};
 const client = new pg.Client(process.env.DATABASE_URL);
 app.use(cors());
 
@@ -18,6 +17,8 @@ app.get('/', (req, res) => { res.send('Will\'s house'); });
 app.get('/location', handleLocation);
 app.get('/weather', heandleWeather);
 app.get('/trails', heandleTrail);
+app.get('/movies', heandleMovies);
+app.get('/yelp', heandleYelp);
 
 // global error
 
@@ -57,11 +58,34 @@ function Trail(obj) {
   this.summary = obj.summary;
 }
 
-// Routes's methods
+function Movie(obj) {
+  this.title = obj.title;
+  this.ovewview = obj.ovewview;
+  this.average_votes = obj.average_votes;
+  this.total_votes = obj.total_votes;
+  this.image_url = obj.image_url;
+  this.popularity = obj.popularity;
+  this.released_on = obj.released_on;
+}
+
+function Yelp(obj) {
+  this.name = obj.name;
+  this.image_url = obj.image_url;
+  this.price = obj.price;
+  this.rating = obj.rating;
+  this.url = obj.url;
+
+}
+
+
+
+
+
+// Routes's functions
 
 function handleLocation(request, response) {
   const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
-  const city = request.query.city;
+  const city = request.query.search_query;
   const url = `https://us1.locationiq.com/v1/search.php?key=${GEOCODE_API_KEY}&q=${city}&format=json&limit=1`;
   let search_query = [request.query.city];
   let SQL = `SELECT * FROM locations WHERE search_query=$1;`;
@@ -78,11 +102,11 @@ function handleLocation(request, response) {
             let SQL = 'INSERT INTO locations (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4);';
             let valSave = [locationData.search_query, locationData.formatted_query, locationData.latitude, locationData.longitude];
             client.query(SQL, valSave)
-              .then(() =>{
+              .then(() => {
                 response.send(locationData);
               })
           })
-          .catch(err => {console.error('return', err)});
+          .catch(err => { console.error('return', err) });
       }
     })
 }
@@ -122,9 +146,41 @@ function heandleTrail(req, res) {
 }
 
 
+
+function heandleMovies(req, res) {
+  let city = req.query.search_query;
+  const MOVIE_API_KEY = process.env.MOVIE_API_KEY;
+  const url = `https://api.themoviedb.org/3/search/movie?api_key=${MOVIE_API_KEY}&query=${city}`
+  superagent.get(url)
+    .then(data => {
+      let bodyData = data.body.results;
+      let movies = bodyData.map(obj => new Movie(obj))
+      res.status(200).send(movies);
+    })
+    .catch(err => { console.error('return', err) });
+}
+
+function heandleYelp(req, res) {
+  const curentPage = req.query.page;
+  const lon = req.query.longitude;
+  const lat = req.query.latitude;
+  const YELP_API_KEY = process.env.YELP_API_KEY;
+  const url = `https://api.yelp.com/v3/businesses/search?latitude=${lat}&longitude=${lon}`;
+  superagent(url)
+    .set('Authorization', `Bearer ${YELP_API_KEY}`)
+    .then(data => {
+      const yelpData = data.body;
+      let yelp = yelpData.businesses.map(obj => new Yelp(obj));
+      let startingPosition = 5 * (curentPage -1);
+      let showYelp = yelp.splice(startingPosition, 5);
+      res.status(200).send(showYelp);
+    })
+    .catch(err => { console.error('return', err) });
+}
+
 // listener of the post
 client.connect()
-  .then(()=>{
+  .then(() => {
     app.listen(PORT, () => {
       console.log(`sever up ${PORT}`);
     });
