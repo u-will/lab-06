@@ -14,7 +14,7 @@ DROP TABLE IF EXISTS weathers;
 CREATE TABLE weathers(
   id SERIAL PRIMARY KEY,
   forecast VARCHAR(255),
-  hour NUMERIC(10, 7)
+  time NUMERIC(10, 7)
 );
 
 DROP TABLE IF EXISTS trails;
