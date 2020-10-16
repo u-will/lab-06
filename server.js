@@ -61,11 +61,11 @@ function Trail(obj) {
 function Movie(obj) {
   this.title = obj.title;
   this.ovewview = obj.ovewview;
-  this.average_votes = obj.average_votes;
+  this.average_votes = obj.votes_average;
   this.total_votes = obj.total_votes;
-  this.image_url = obj.image_url;
+  this.image_url = `https://image.tmdb.org/t/p/w600_and_h900_bestv2${obj.poster_path}`;
   this.popularity = obj.popularity;
-  this.released_on = obj.released_on;
+  this.released_on = obj.release_date;
 }
 
 function Yelp(obj) {
@@ -166,7 +166,7 @@ function heandleYelp(req, res) {
   const lat = req.query.latitude;
   const YELP_API_KEY = process.env.YELP_API_KEY;
   const url = `https://api.yelp.com/v3/businesses/search?latitude=${lat}&longitude=${lon}`;
-  superagent(url)
+  superagent.get(url)
     .set('Authorization', `Bearer ${YELP_API_KEY}`)
     .then(data => {
       const yelpData = data.body;
